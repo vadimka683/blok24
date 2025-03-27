@@ -1,6 +1,7 @@
 #include<iostream>
 #include<ctime>
 #include<map>
+#include<fstream>
 
 struct Task
 {
@@ -56,12 +57,51 @@ void print_status(std::map<int, Task>& task_history, int& count) {
 	}
 }
 
+void save_history(std::map<int, Task>& task_history) {
+	std::ofstream save("Task history.BIN", std::ios::binary);
+	for (std::map<int, Task>::iterator it = task_history.begin(); it != task_history.end(); it++) {
+		size_t name_leght = it->second.name.length();
+		save.write(reinterpret_cast<char*>(&name_leght), sizeof(name_leght));
+		save.write(it->second.name.data(), name_leght);
+		save.write(reinterpret_cast<char*>(&it->second.task_time_h), sizeof(it->second.task_time_h));
+		save.write(reinterpret_cast<char*>(&it->second.task_time_m), sizeof(it->second.task_time_m));
+		save.write(reinterpret_cast<char*>(&it->second.task_time_s), sizeof(it->second.task_time_s));
+		save.write(reinterpret_cast<char*>(&it->second.time_finish), sizeof(it->second.time_finish));
+		save.write(reinterpret_cast<char*>(&it->second.time_start), sizeof(it->second.time_start));
+		int i = it->first;
+		save.write(reinterpret_cast<char*>(&i), sizeof(i));
+	}
+}
+
+void load_history(std::map<int, Task>& task_history) {
+	std::ifstream load("Task history.BIN", std::ios::binary);
+	while (true) {
+		size_t name_leght;
+		Task task_temp;
+		if (!load.read(reinterpret_cast<char*>(&name_leght), sizeof(name_leght))) {
+			break;
+		}
+		task_temp.name.resize(name_leght);
+		if (!load.read(&task_temp.name[0], name_leght)) {
+			break;
+		}
+		load.read(reinterpret_cast<char*>(&task_temp.task_time_h), sizeof(task_temp.task_time_h));
+		load.read(reinterpret_cast<char*>(&task_temp.task_time_m), sizeof(task_temp.task_time_m));
+		load.read(reinterpret_cast<char*>(&task_temp.task_time_s), sizeof(task_temp.task_time_s));
+		load.read(reinterpret_cast<char*>(&task_temp.time_finish), sizeof(task_temp.time_finish));
+		load.read(reinterpret_cast<char*>(&task_temp.time_start), sizeof(task_temp.time_start));
+		int count;
+		load.read(reinterpret_cast<char*>(&count), sizeof(count));
+		task_history.insert(std::make_pair(count, task_temp));
+	}
+}
+
 int main() {
 	std::map<int, Task> task_history;
 	std::string answer;
 	int counter = 0;
 	do {
-		std::cout << "Input comand: Exit or Begin or End or Status: ";
+		std::cout << "Input comand: Exit or Begin or End or Status or Load or Save: ";
 		std::cin >> answer;
 		if (answer == "Exit") {
 			return 0;
@@ -74,6 +114,12 @@ int main() {
 		}
 		else if (answer == "Status") {
 			print_status(task_history, counter);
+		}
+		else if (answer == "Save") {
+			save_history(task_history);
+		}
+		else if (answer == "Load") {
+			load_history(task_history);
 		}
 	} while (true);
 }
